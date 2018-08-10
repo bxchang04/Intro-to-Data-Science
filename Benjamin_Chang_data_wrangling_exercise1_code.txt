@@ -45,5 +45,4 @@ ro <- ro %>%
    mutate("company_unilever" = {if (any(as.character(viewcompany) ==  "unilever")) "1" else "0"})
 
 
-Question -- how to go to compiler? Instead of typing everything into console
-
+refine_clean <- ro
