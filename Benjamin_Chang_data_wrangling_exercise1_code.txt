@@ -1,0 +1,49 @@
+#load libraries and datasets
+install.packages(plyr)
+install.packages(dplyr)
+install.packages(tidyverse)
+library(tidyverse)
+library(plyr)
+library(dplyr)
+library(readxl)
+refine_original <- read_excel("refine_original.csv")
+
+#Create dataframe variable to reduce typing
+ro <- refine_original
+
+#1: Clean up brand names (arranged by company names for ease of reading)
+
+arrange(ro, viewcompany)
+
+ro <- ro %>% mutate(as.character(viewcompany), viewcompany = ifelse(grepl("^phil|^fil|^phl", as.character(viewcompany), ignore.case = TRUE), "philips", as.character(viewcompany))) %>%
+    mutate(as.character(viewcompany), viewcompany = ifelse(grepl("^ak", viewcompany, ignore.case = TRUE), "akzo", as.character(viewcompany))) %>%
+    mutate(as.character(viewcompany), viewcompany = ifelse(grepl("^van", viewcompany, ignore.case = TRUE), "van_houten", as.character(viewcompany))) %>%
+    mutate(as.character(viewcompany), viewcompany = ifelse(grepl("^uni", viewcompany, ignore.case = TRUE), "unilever", as.character(viewcompany)))
+#debug - removes extraneous column
+ro <- select(ro, -11)
+
+#2: Separate product code and number
+ro_new <- separate(refine_original, Product.code...number, c(product_code = "Product.code", product_number = "Product.number"))
+ro_new <- select(ro_new, product_code, product_number)
+ro <- left_join(ro, prod_info)
+
+#3: Add product categories
+prod_info <- distinct(select(ro, Product.code))
+prod_cat <- c("Smartphone", "Laptop", "TV", "Tablet")as.data.frame(prod_cat)
+prod_info <- bind_cols(prod_info, prod_cat)
+left_join(ro, prod_cat)
+
+#4: Add full address for geocoding
+ro <- unite(ro, full_address, address, city, country, sep = ", ", remove = FALSE)
+
+#Create dummy variable columns
+ro <- ro %>% 
+   group_by(viewcompany) %>% 
+   mutate("company_philips" = {if (any(as.character(viewcompany) == "philips")) "1" else "0"}) %>% 
+   mutate("company_akzo" = {if (any(as.character(viewcompany) == "akzo")) "1" else "0"}) %>% 
+   mutate("company_van_houten" = {if (any(as.character(viewcompany) ==  "van_houten")) "1" else "0"}) %>% 
+   mutate("company_unilever" = {if (any(as.character(viewcompany) ==  "unilever")) "1" else "0"})
+
+
+Question -- how to go to compiler? Instead of typing everything into console
+
